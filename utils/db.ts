@@ -9,14 +9,21 @@ const jobs = z.object({
 const applicationStatus = z.enum(["applied", "interview", "declined"]);
 const applicationMethod = z.enum(["email", "phone", "in-person","online"]);
 
+// /jobs/{jobId}
 const application = z.object({
     job: jobs,
     status: applicationStatus,
+    dateApplied: z.coerce.date().max(new Date()).describe("When the application was made."),
     method: applicationMethod.default("online"),
     location: z.string().trim().describe("Where the application was made: website, phone number, location (physical)."),
     lastUpdated: z.coerce.date(),
     created : z.coerce.date(),
 });
+
+// /jobs/{jobId}/activity/{activityId}
+const activity = z.object({
+
+})
 export default {
     application,
     applicationStatus,

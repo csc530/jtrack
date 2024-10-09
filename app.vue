@@ -3,14 +3,15 @@
     <UCard class="mt-10">
       <template #header>
         <div class="flex justify-between">
-          <h1>Welcome to Nuxt UI Starter</h1>
+          <h1>applications</h1>
           <ColorScheme>
             <USelect v-model="$colorMode.preference" :options="['system', 'light', 'dark']" />
           </ColorScheme>
+          <UButton label="Add application" @click="() => jobSlideover = true" />
         </div>
       </template>
 
-      <UTable>
+      <UTable :rows="applicationsStore.applications" :columns="tableColumns">
         <template #empty-state>
           <p class="italic text-sm">No job applications!</p>
           <UButton label="Add application" @click="() => jobSlideover = true" />
@@ -26,25 +27,28 @@
       </template>
 
       <template #default>
-        <UForm ref="form" :schema="firestore.application" :state="formData" @submit="onSubmit">
+        <UForm ref="form" :schema="db.application" :state="formData" @submit="onSubmit">
           <UFormGroup label="Job title" required name="job.title">
             <UInput v-model="formData.job.title" required />
           </UFormGroup>
 
-          <UFormGroup label="Employer/Company" name="job.company">
-            <UInput v-model="formData.job.company" />
+          <UFormGroup label="Employer/Company" name="job.company" required>
+            <UInput v-model="formData.job.company" required />
           </UFormGroup>
 
-          <UFormGroup label="date applied">
-            <UInput disabled type="date" :model-value="new Date().toISOString().split('T')[0]" />
+          <UFormGroup label="date applied" required>
+            <UInput type="date" :model-value="new Date().toISOString().split('T')[0]" />
           </UFormGroup>
 
           <UFormGroup label="Application method" name="method">
-            <USelect v-model="formData.method" :options="firestore.applicationMethod.options" />
+            <USelect v-model="formData.method" :options="db.applicationMethod.options" />
           </UFormGroup>
 
-          <UFormGroup label="Location" :description="firestore.application.shape.location.description" name="location">
-            <UInput v-model="formData.location" />
+          <UFormGroup label="Location" :description="db.application.shape.location.description" name="location" required>
+            <UInput v-model="formData.location" list="locations-list" />
+            <datalist id="locations-list">
+              <option v-for="location in posibleLocations" :key="location">{{ location }}</option>
+            </datalist>
           </UFormGroup>
 
           <UFormGroup label="Job description" name="job.description">
@@ -64,23 +68,21 @@
 
 <script setup lang="ts">
   import type { DeepPartial, Form, FormSubmitEvent } from '#ui/types';
-import { collection, doc, setDoc } from "firebase/firestore";
+
   useHead({
     titleTemplate: (title) => title
       ? `${title} - JTracker`
       : 'J-Tracker'
   });
-  const db = useFirestore();
-  const jobsCollectionRef = collection(db, 'jobs');
-  const testDoc_chris_myDocRef = doc(db, 'test', 'chris');
 
+  const applicationsStore  = stores.useApplicationsStore()
   const jobSlideover = ref(false);
   const form = ref<Form<DbApplication>>();
   const formData = reactive<DeepPartial<DbApplication>>({
     job: {
       title: undefined,
       company: undefined,
-      description: undefined,
+      description: null,
     },
     created: new Date(),
     status: 'applied',
@@ -89,9 +91,48 @@ import { collection, doc, setDoc } from "firebase/firestore";
     lastUpdated: new Date()
   });
 
+  const posibleLocations = [
+    "linkedin",
+    "indeed",
+    "company website",
+    "cold-call",
+    "cold-email",
+  ]
+
+  const tableColumns = [
+    {
+      label: 'Job title',
+      key: 'job.title',
+    },
+    {
+      label: 'Company',
+      key: 'job.company',
+    },
+    {
+      label: 'Date applied',
+      key: 'dateApplied',
+      sortable :true
+    },
+    {
+      label: 'Status',
+      key: 'status',
+      sortable :true
+    },
+    {
+      label: 'Method',
+      key: 'method',
+      sortable :true
+    },
+    {
+      label: 'Location',
+      key: 'location',
+      sortable :true
+    },
+  ]
 
 
   async function onSubmit(event: FormSubmitEvent<DbApplication>) {
-    setDoc(testDoc_chris_myDocRef, event.data);
+    applicationsStore.addApplication(event.data);
+    // setDoc(testDoc_chris_myDocRef, event.data);
   }
 </script>

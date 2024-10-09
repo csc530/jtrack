@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     "nuxt-vuefire",
     "@nuxt/eslint",
     "@nuxtjs/html-validator",
+    "@pinia/nuxt",
   ],
   compatibilityDate: "2024-10-06",
   vuefire: {
