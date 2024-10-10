@@ -4,9 +4,12 @@
       <template #header>
         <div class="flex justify-between">
           <h1>applications</h1>
-          <ColorScheme>
-            <USelect v-model="$colorMode.preference" :options="['system', 'light', 'dark']" />
-          </ColorScheme>
+          <UFormGroup label="dialog style" :description="getDialogStyle(dialogStyle)">
+            <UToggle v-model="dialogStyle" />
+          </UFormGroup>
+          <UButton disabled label="Export" @click="() => console.log('export')" />
+          <UButton disabled label="Import" @click="() => console.log('import')" />
+          <UButton label="Reset" color="red" @click="clearApplications" />
           <UButton label="Add application" @click="() => jobSlideover = true" />
         </div>
       </template>
@@ -20,14 +23,14 @@
     </UCard>
   </UContainer>
 
-  <USlideover v-model="jobSlideover">
+  <component :is="!dialogStyle ? UDialog : UModal" v-model="jobSlideover">
     <UCard class="flex flex-col flex-1">
       <template #header>
         <h2>Job Application</h2>
       </template>
 
       <template #default>
-        <UForm ref="form" :schema="db.application" :state="formData" @submit="onSubmit">
+        <UForm ref="form" :schema="db.application" :state="formData" @error="onError" @submit="onSubmit">
           <UFormGroup label="Job title" required name="job.title">
             <UInput v-model="formData.job.title" required />
           </UFormGroup>
@@ -37,14 +40,16 @@
           </UFormGroup>
 
           <UFormGroup label="date applied" required>
-            <UInput type="date" :model-value="new Date().toISOString().split('T')[0]" />
+            <UInput type="date" :model-value="formData.dateApplied.toISOString().split('T')[0]" required
+              @update:model-value="e => formData.dateApplied = new Date(e)" />
           </UFormGroup>
 
           <UFormGroup label="Application method" name="method">
             <USelect v-model="formData.method" :options="db.applicationMethod.options" />
           </UFormGroup>
 
-          <UFormGroup label="Location" :description="db.application.shape.location.description" name="location" required>
+          <UFormGroup label="Location" :description="db.application.shape.location.description" name="location"
+            required>
             <UInput v-model="formData.location" list="locations-list" />
             <datalist id="locations-list">
               <option v-for="location in posibleLocations" :key="location">{{ location }}</option>
@@ -52,10 +57,10 @@
           </UFormGroup>
 
           <UFormGroup label="Job description" name="job.description">
-            <UTextarea
-              v-model="formData.job.description"
+            <UTextarea v-model="formData.job.description"
               placeholder="best to straight copy + paste from the job posting..." />
           </UFormGroup>
+          <UButton label="Cancel" type="reset" @click="() => jobSlideover = false" />
           <UButton label="Submit" type="submit" />
         </UForm>
       </template>
@@ -63,11 +68,13 @@
 
       <template #footer />
     </UCard>
-  </USlideover>
+  </component>
 </template>
 
 <script setup lang="ts">
-  import type { DeepPartial, Form, FormSubmitEvent } from '#ui/types';
+  import type { DeepPartial, Form, FormErrorEvent, FormSubmitEvent } from '#ui/types';
+  import UModal from '#ui/components/overlays/Modal.vue';
+  import UDialog from '#ui/components/overlays/Slideover.vue';
 
   useHead({
     titleTemplate: (title) => title
@@ -75,7 +82,11 @@
       : 'J-Tracker'
   });
 
-  const applicationsStore  = stores.useApplicationsStore()
+  const dialogStyle = ref(true);
+  function getDialogStyle(selected: boolean) {
+    return selected ? "modal" : "slideover";
+  }
+  const applicationsStore = stores.useApplicationsStore();
   const jobSlideover = ref(false);
   const form = ref<Form<DbApplication>>();
   const formData = reactive<DeepPartial<DbApplication>>({
@@ -84,6 +95,7 @@
       company: undefined,
       description: null,
     },
+    dateApplied: new Date(),
     created: new Date(),
     status: 'applied',
     method: 'online',
@@ -97,7 +109,7 @@
     "company website",
     "cold-call",
     "cold-email",
-  ]
+  ];
 
   const tableColumns = [
     {
@@ -111,28 +123,43 @@
     {
       label: 'Date applied',
       key: 'dateApplied',
-      sortable :true
+      sortable: true
     },
     {
       label: 'Status',
       key: 'status',
-      sortable :true
+      sortable: true
     },
     {
       label: 'Method',
       key: 'method',
-      sortable :true
+      sortable: true
     },
     {
       label: 'Location',
       key: 'location',
-      sortable :true
+      sortable: true
     },
-  ]
+  ];
 
 
   async function onSubmit(event: FormSubmitEvent<DbApplication>) {
+    console.log(event.data);
     applicationsStore.addApplication(event.data);
+    jobSlideover.value = false;
     // setDoc(testDoc_chris_myDocRef, event.data);
+  }
+  async function onError(event: FormErrorEvent) {
+    event.errors.forEach((error) => {
+      console.error(error);
+    });
+    const element = document.getElementById(event.errors[0].id);
+    element?.focus();
+    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearApplications() {
+    if (confirm("Are you sure?"))
+      applicationsStore.clearApplications();
   }
 </script>

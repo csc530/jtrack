@@ -20,6 +20,7 @@ export default class IDB {
     constructor() {
         // throw new Error("Illegal constructor");
     }
+
     get idbVersion() {
         return this.idb.version;
     }
@@ -27,6 +28,12 @@ export default class IDB {
     get stores() {
         return this.idb.objectStoreNames;
     };
+
+    async clearStore(store: idbStores) {
+        const request = this.idb.transaction(store, "readwrite").objectStore(store).clear();
+        if(!await IDB.#requestIsDone(request))
+            throw new Error("Failed to clear store");
+    }
 
     async add(storeName: idbStores, data: IDbValue<object> | IDbValue<object>[]) {
         if (!Array.isArray(data))
@@ -40,22 +47,21 @@ export default class IDB {
     }
 
     async getValues(store: idbStores, query?: IDBKeyRange) {
-        console.log(this);
         const req = this.idb.transaction(store, "readonly").objectStore(store).getAll(query);
         await getPromiseFromEvent(req, "success");
         const base = this;
-        const result: IDbResult<unknown> = req.result;
-        result.update = async function () {
-            const req = base.idb.transaction(store, "readonly").objectStore(store).getAll(query);
-            await getPromiseFromEvent(req, "success");
-            const res = req.result;
-            for (let i = 0; i < this.length; i++)
-                if (i in res)
-                    this[i] = res[i];
-
-                else
-                    delete this[i];
-        };
+        const result: IDbResult<typeof req.result[number]> = Object.assign([],req.result, {
+            update: async function value(this: typeof req.result) {
+                    const req = base.idb.transaction(store, "readonly").objectStore(store).getAll(query);
+                    await getPromiseFromEvent(req, "success");
+                    const res = req.result;
+                    for (let i = 0; i < this.length; i++)
+                        if (i in res)
+                            this[i] = res[i];
+                        else
+                            delete this[i];
+                }
+        });
         return result;
     }
 
@@ -84,5 +90,21 @@ export default class IDB {
         if (!db.objectStoreNames.contains("applications")) {
             db.createObjectStore("applications", { autoIncrement: true, keyPath: "_id" });
         }
+    }
+
+    static async #requestIsDone(request: IDBRequest) {
+        await Promise.race([getPromiseFromEvent(request, "success"), getPromiseFromEvent(request, "error")]);
+        return request.readyState === "done";
+    }
+}
+
+
+class IDBTransactionError extends Error {
+
+    constructor(message: string) {
+        super(message);
+        // Set the prototype explicitly.
+        Object.setPrototypeOf(this, IDBTransactionError.prototype);
+        this.name = "IDBTransactionError";
     }
 }

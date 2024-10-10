@@ -13,7 +13,7 @@ const applicationMethod = z.enum(["email", "phone", "in-person","online"]);
 const application = z.object({
     job: jobs,
     status: applicationStatus,
-    dateApplied: z.coerce.date().max(new Date()).describe("When the application was made."),
+    dateApplied: z.coerce.date().max(new Date(Date.now() + 1000 * 60 * 60 * 24), "Applied date must be in the past.").describe("When the application was made."),
     method: applicationMethod.default("online"),
     location: z.string().trim().describe("Where the application was made: website, phone number, location (physical)."),
     lastUpdated: z.coerce.date(),

@@ -2,9 +2,9 @@ import IDB from "../models/IDB";
 const useApplicationsStore = defineStore("applications", () => {
     // init
     const idb = ref<IDB | undefined>(undefined);
-    onMounted(async() => {
+    onMounted(async () => {
         idb.value = await IDB.newConnection(1);
-        applications.value = await idb.value.getValues(idbStores.APPLICATIONS);
+        updateApplications();
     });
 
     // state
@@ -14,11 +14,19 @@ const useApplicationsStore = defineStore("applications", () => {
     const applications = ref<IDbResult<DbApplication>>();
 
     // actions
-
     function addApplication(application: DbApplication) {
         const data: IDbValue<DbApplication> = { ...toRaw(application), _id: crypto.randomUUID() };
         idb.value?.add(idbStores.APPLICATIONS, data);
-        applications.value?.update()
+        updateApplications();
+    }
+
+    function clearApplications() {
+        idb.value?.clearStore(idbStores.APPLICATIONS);
+        updateApplications();
+    }
+
+    async function updateApplications() {
+        applications.value = await idb.value?.getValues(idbStores.APPLICATIONS);
     }
 
 
@@ -29,7 +37,6 @@ const useApplicationsStore = defineStore("applications", () => {
 
     }
     function toRaw<T>(val: T): T {
-        console.log("toRaw", val);
         if (isReactive(val))
             return Object.entries(val as object).reduce((obj, [key, val]) => ({ ...obj, [key]: toRaw(val) }), {}) as T;
         else if (isRef<T>(val))
@@ -44,7 +51,9 @@ const useApplicationsStore = defineStore("applications", () => {
         // getters
         applications,
         // actions
-        addApplication
+        addApplication,
+        clearApplications,
+        updateApplications,
     };
 });
 
