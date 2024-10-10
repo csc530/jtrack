@@ -1,7 +1,19 @@
-# Nuxt UI Minimal Starter
+# Job tracker
 
-Look at [Nuxt docs](https://nuxt.com/docs/getting-started/introduction) and
-[Nuxt UI docs](https://ui.nuxt.com) to learn more.
+Locally track your job applications.
+See what does, doesn't work -- is it you, is it them??
+
+## todo
+
+- [ ] csv import/export
+- [ ] online db/acct-user mngmt
+- [ ] **application activity log**
+- [ ] add more fields
+  - [ ] resume applied with
+  - [ ] posted salary
+  - [ ] posted date
+  - [ ] application deadline
+  - [ ] application status
 
 ## Setup
 
@@ -38,41 +50,3 @@ yarn dev
 # bun
 bun run dev
 ```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm run build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the
-[deployment documentation](https://nuxt.com/docs/getting-started/deployment) for
-more information.
