@@ -20,6 +20,11 @@ const useApplicationsStore = defineStore("applications", () => {
         updateApplications();
     }
 
+    function editApplication(application: IDbValue<DbApplication>) {
+        idb.value?.update(idbStores.APPLICATIONS, application);
+        updateApplications();
+    }
+
     function clearApplications() {
         idb.value?.clearStore(idbStores.APPLICATIONS);
         updateApplications();
@@ -36,14 +41,7 @@ const useApplicationsStore = defineStore("applications", () => {
     function watchActionState(request: IDBRequest) {
 
     }
-    function toRaw<T>(val: T): T {
-        if (isReactive(val))
-            return Object.entries(val as object).reduce((obj, [key, val]) => ({ ...obj, [key]: toRaw(val) }), {}) as T;
-        else if (isRef<T>(val))
-            return toRaw(val.value);
-        else
-            return val;
-    }
+
 
     return {
         // state
@@ -54,6 +52,7 @@ const useApplicationsStore = defineStore("applications", () => {
         addApplication,
         clearApplications,
         updateApplications,
+        editApplication,
     };
 });
 

@@ -10,11 +10,11 @@
           <UButton disabled label="Export" @click="() => console.log('export')" />
           <UButton disabled label="Import" @click="() => console.log('import')" />
           <UButton label="Reset" color="red" @click="clearApplications" />
-          <UButton label="Add application" @click="() => jobSlideover = true" />
+          <UButton label="Add application" @click="addApplication" />
         </div>
       </template>
 
-      <UTable :rows="applicationsStore.applications" :columns="tableColumns">
+      <UTable v-model="tableRow" :rows="applicationsStore.applications" :columns="tableColumns" @select="onRowSelect">
         <template #empty-state>
           <p class="italic text-sm">No job applications!</p>
           <UButton label="Add application" @click="() => jobSlideover = true" />
@@ -30,43 +30,23 @@
       </template>
 
       <template #default>
-        <UForm ref="form" :schema="db.application" :state="formData" @error="onError" @submit="onSubmit">
-          <UFormGroup label="Job title" required name="job.title">
-            <UInput v-model="formData.job.title" required />
-          </UFormGroup>
-
-          <UFormGroup label="Employer/Company" name="job.company" required>
-            <UInput v-model="formData.job.company" required />
-          </UFormGroup>
-
-          <UFormGroup label="date applied" required>
-            <UInput type="date" :model-value="formData.dateApplied.toISOString().split('T')[0]" required
-              @update:model-value="e => formData.dateApplied = new Date(e)" />
-          </UFormGroup>
-
-          <UFormGroup label="Application method" name="method">
-            <USelect v-model="formData.method" :options="db.applicationMethod.options" />
-          </UFormGroup>
-
-          <UFormGroup label="Location" :description="db.application.shape.location.description" name="location"
-            required>
-            <UInput v-model="formData.location" list="locations-list" />
-            <datalist id="locations-list">
-              <option v-for="location in posibleLocations" :key="location">{{ location }}</option>
-            </datalist>
-          </UFormGroup>
-
-          <UFormGroup label="Job description" name="job.description">
-            <UTextarea v-model="formData.job.description"
-              placeholder="best to straight copy + paste from the job posting..." />
-          </UFormGroup>
-          <UButton label="Cancel" type="reset" @click="() => jobSlideover = false" />
-          <UButton label="Submit" type="submit" />
-        </UForm>
+        <ApplicationForm v-model="applicationState" @submit="onSubmit" @error="onError" />
       </template>
 
 
       <template #footer />
+    </UCard>
+  </component>
+
+  <component :is="!dialogStyle ? UDialog : UModal" v-model="editModal">
+    <UCard class="flex flex-col flex-1">
+      <template #header>
+        <h2>Edit application</h2>
+      </template>
+
+      <template #default>
+        <ApplicationForm v-model="applicationState" @submit="editApplication" @error="onError" />
+      </template>
     </UCard>
   </component>
 </template>
@@ -75,6 +55,7 @@
   import type { DeepPartial, Form, FormErrorEvent, FormSubmitEvent } from '#ui/types';
   import UModal from '#ui/components/overlays/Modal.vue';
   import UDialog from '#ui/components/overlays/Slideover.vue';
+import idbValue from "~/utils/idb";
 
   useHead({
     titleTemplate: (title) => title
@@ -86,10 +67,7 @@
   function getDialogStyle(selected: boolean) {
     return selected ? "modal" : "slideover";
   }
-  const applicationsStore = stores.useApplicationsStore();
-  const jobSlideover = ref(false);
-  const form = ref<Form<DbApplication>>();
-  const formData = reactive<DeepPartial<DbApplication>>({
+  const defaultApplication = () => ({
     job: {
       title: undefined,
       company: undefined,
@@ -101,15 +79,16 @@
     method: 'online',
     location: undefined,
     lastUpdated: new Date()
-  });
+  } as DeepPartial<DbApplication>);
+  const applicationState = ref<IDbValue<DbApplication> | ReturnType<typeof defaultApplication>>(defaultApplication());
+  const tableRow = ref<IDbValue<DbApplication>[]>([]);
+  const applicationsStore = stores.useApplicationsStore();
+  const jobSlideover = ref(false);
+  const editModal = ref(false);
+  const form = ref<Form<DbApplication>>();
 
-  const posibleLocations = [
-    "linkedin",
-    "indeed",
-    "company website",
-    "cold-call",
-    "cold-email",
-  ];
+
+
 
   const tableColumns = [
     {
@@ -144,7 +123,6 @@
 
 
   async function onSubmit(event: FormSubmitEvent<DbApplication>) {
-    console.log(event.data);
     applicationsStore.addApplication(event.data);
     jobSlideover.value = false;
     // setDoc(testDoc_chris_myDocRef, event.data);
@@ -161,5 +139,25 @@
   function clearApplications() {
     if (confirm("Are you sure?"))
       applicationsStore.clearApplications();
+  }
+
+  function onRowSelect(row: IDbValue<DbApplication>) {
+    if (row._id !== tableRow.value?.[0]?._id)
+      tableRow.value = [row];
+    // temp.value = 1;
+    // applicationState.value = ref(temp.value);
+    applicationState.value =toRaw(row)
+    editModal.value = true;
+  }
+
+  function editApplication(event: FormSubmitEvent<IDbValue<DbApplication  > >) {
+    const data = db.application.passthrough().and(idbValue).parse(event.data)
+      applicationsStore.editApplication(data);
+    editModal.value = false;
+  }
+
+  function addApplication() {
+    applicationState.value = defaultApplication();
+    jobSlideover.value = true;
   }
 </script>

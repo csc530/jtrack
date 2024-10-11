@@ -13,3 +13,11 @@ export function getPromiseFromEvent(item: EventTarget, event: string): Promise<v
         item.addEventListener(event, listener);
     });
 }
+export function toRaw<T>(val: T): T {
+    if (isReactive(val))
+        return Object.entries(val as object).reduce((obj, [key, val]) => ({ ...obj, [key]: toRaw(val) }), {}) as T;
+    else if (isRef<T>(val))
+        return toRaw(val.value);
+    else
+        return val;
+}

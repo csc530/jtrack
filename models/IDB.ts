@@ -29,6 +29,14 @@ export default class IDB {
         return this.idb.objectStoreNames;
     };
 
+    //todo: add status for transactions add/put within resolved promises
+    async update(storeName: idbStores, data: IDbValue<object> | IDbValue<object>[]) {
+        if (!Array.isArray(data))
+            data = [data];
+        const store = this.idb.transaction(storeName, "readwrite").objectStore(storeName);
+        return Promise.all(data.map((data) => store.put(data)));
+    }
+
     async clearStore(store: idbStores) {
         const request = this.idb.transaction(store, "readwrite").objectStore(store).clear();
         if(!await IDB.#requestIsDone(request))
