@@ -1,5 +1,5 @@
-import useApplicationsStore from "~/stores/applications";
+import useApplicationStore from "~/stores/applications";
 
 export default {
-    useApplicationsStore,
+    useApplicationsStore: useApplicationStore,
 }

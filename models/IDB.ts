@@ -29,6 +29,16 @@ export default class IDB {
         return this.idb.objectStoreNames;
     };
 
+    async delete(storeName: idbStores, data: Array<IDbValue<object> | IDbValue<object>["_id"]> | IDbValue<object> | IDbValue<object>["_id"]) {
+        let keys = [];
+        if (!Array.isArray(data))
+            keys.push(typeof data !== "object" ? data : data._id);
+        else
+            keys = data.map((data) => typeof data !== "object" ? data : data._id);
+        const store = this.idb.transaction(storeName, "readwrite").objectStore(storeName);
+        return Promise.all(keys.map(key => store.delete(key)));
+    }
+
     //todo: add status for transactions add/put within resolved promises
     async update(storeName: idbStores, data: IDbValue<object> | IDbValue<object>[]) {
         if (!Array.isArray(data))
@@ -39,7 +49,7 @@ export default class IDB {
 
     async clearStore(store: idbStores) {
         const request = this.idb.transaction(store, "readwrite").objectStore(store).clear();
-        if(!await IDB.#requestIsDone(request))
+        if (!await IDB.#requestIsDone(request))
             throw new Error("Failed to clear store");
     }
 
@@ -58,17 +68,17 @@ export default class IDB {
         const req = this.idb.transaction(store, "readonly").objectStore(store).getAll(query);
         await getPromiseFromEvent(req, "success");
         const base = this;
-        const result: IDbResult<typeof req.result[number]> = Object.assign([],req.result, {
+        const result: IDbResult<typeof req.result[number]> = Object.assign([], req.result, {
             update: async function value(this: typeof req.result) {
-                    const req = base.idb.transaction(store, "readonly").objectStore(store).getAll(query);
-                    await getPromiseFromEvent(req, "success");
-                    const res = req.result;
-                    for (let i = 0; i < this.length; i++)
-                        if (i in res)
-                            this[i] = res[i];
-                        else
-                            delete this[i];
-                }
+                const req = base.idb.transaction(store, "readonly").objectStore(store).getAll(query);
+                await getPromiseFromEvent(req, "success");
+                const res = req.result;
+                for (let i = 0; i < this.length; i++)
+                    if (i in res)
+                        this[i] = res[i];
+                    else
+                        delete this[i];
+            }
         });
         return result;
     }

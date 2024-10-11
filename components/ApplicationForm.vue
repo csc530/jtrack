@@ -14,21 +14,16 @@ type="date" :model-value="state.dateApplied.toISOString().split('T')[0]" require
                 @update:model-value="e => state.dateApplied = new Date(e)" />
         </UFormGroup>
 
-        <UFormGroup label="Application method" name="method">
-            <USelect v-model="state.method" :options="db.applicationMethod.options" />
+        <UFormGroup label="Application method" name="method" required>
+            <USelect v-model="state.method" :options="db.applicationMethod.options" required/>
         </UFormGroup>
 
-        <UFormGroup label="Location" :description="db.application.shape.location.description" name="location" required>
-            <UInput v-model="state.location" list="locations-list" />
-            <datalist id="locations-list">
-                <option v-for="location in possibleLocations" :key="location">{{ location }}</option>
-            </datalist>
+        <UFormGroup label="Location" :description="db.application.shape.location.description" name="location" help="location does not have to be from dropdown. Click off text-box to keep your response." required>
+            <UInputMenu v-model="state.location" :options="possibleLocations" required placeholder="Glassdoor, In-store, conversation, etc."/>
         </UFormGroup>
 
         <UFormGroup label="Job description" name="job.description">
-            <UTextarea
-v-model="state.job.description"
-                placeholder="best to straight copy + paste from the job posting..." />
+            <UTextarea v-model="state.job.description" placeholder="best to straight copy + paste from the job posting..." />
         </UFormGroup>
         <UButton label="Cancel" type="reset" @click="() => $emit('cancel')" />
         <UButton label="Submit" type="submit" />
@@ -36,7 +31,7 @@ v-model="state.job.description"
 </template>
 
 <script setup lang="ts" generic="T extends DbApplication">
-    import type { DeepPartial, Form, FormErrorEvent, FormSubmitEvent } from '#ui/types';
+    import type { DeepPartial, FormErrorEvent, FormSubmitEvent } from '#ui/types';
     const possibleLocations = [
         "linkedin",
         "indeed",
@@ -46,7 +41,8 @@ v-model="state.job.description"
     ];
 
     // editing is too live save initial state in cancel
-    const state = defineModel<DeepPartial<T>>({required: true});
+    const state = defineModel<DeepPartial<T>>({ required: true });
+    console.log("state", state);
     const localState = ref({
         job: {
             title: undefined,

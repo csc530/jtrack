@@ -1,5 +1,5 @@
 import IDB from "../models/IDB";
-const useApplicationsStore = defineStore("applications", () => {
+const useApplicationStore = defineStore("applications", () => {
     // init
     const idb = ref<IDB | undefined>(undefined);
     onMounted(async () => {
@@ -14,6 +14,10 @@ const useApplicationsStore = defineStore("applications", () => {
     const applications = ref<IDbResult<DbApplication>>();
 
     // actions
+    function deleteApplication(application: IDbValue<DbApplication>) {
+        idb.value?.delete(idbStores.APPLICATIONS, application._id);
+        updateApplications();
+    }
     function addApplication(application: DbApplication) {
         const data: IDbValue<DbApplication> = { ...toRaw(application), _id: crypto.randomUUID() };
         idb.value?.add(idbStores.APPLICATIONS, data);
@@ -53,7 +57,8 @@ const useApplicationsStore = defineStore("applications", () => {
         clearApplications,
         updateApplications,
         editApplication,
+        deleteApplication
     };
 });
 
-export default useApplicationsStore;
+export default useApplicationStore;
