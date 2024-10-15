@@ -1,13 +1,13 @@
 
-export default class IDB {
+export default class IndexedDB {
     // actual private "#" does not work as a reactive object can't access it -- the proxy
     private idb: IDBDatabase;
     status: "open" | "closed" = "closed";
 
     static async newConnection(version: number) {
         const req = window.indexedDB.open("csc530-job-tracker", version);
-        const idb = new IDB();
-        req.addEventListener("upgradeneeded", IDB.#upgradeIdb.bind(idb));
+        const idb = new IndexedDB();
+        req.addEventListener("upgradeneeded", IndexedDB.#upgradeIdb.bind(idb));
         req.addEventListener("success", idb.#initializeIdb.bind(idb), { once: true });
         req.onerror = (event) => {
             console.error("Failed to open indexedDB", event);
@@ -49,7 +49,7 @@ export default class IDB {
 
     async clearStore(store: idbStores) {
         const request = this.idb.transaction(store, "readwrite").objectStore(store).clear();
-        if (!await IDB.#requestIsDone(request))
+        if (!await IndexedDB.#requestIsDone(request))
             throw new Error("Failed to clear store");
     }
 

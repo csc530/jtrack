@@ -1,9 +1,9 @@
-import IDB from "../models/IDB";
+import IndexedDB from "../models/IDB";
 const useApplicationStore = defineStore("applications", () => {
     // init
-    const idb = ref<IDB | undefined>(undefined);
+    const idb = useState<IndexedDB | undefined>("idb", () => undefined);
     onMounted(async () => {
-        idb.value = await IDB.newConnection(1);
+        idb.value = await IndexedDB.newConnection(1);
         updateApplications();
     });
 
