@@ -21,3 +21,7 @@ export function toRaw<T>(val: T): T {
     else
         return val;
 }
+
+export type DeepPartial<T> = T extends object ? {
+    [P in keyof T]?: DeepPartial<T[P]>;
+} : T;

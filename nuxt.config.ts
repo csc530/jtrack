@@ -1,6 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true,
+
+    timeline: {
+      enabled: true,
+    },
+  },
   app: {
     head: {
       htmlAttrs: {
@@ -15,6 +21,7 @@ export default defineNuxtConfig({
     "@nuxt/eslint",
     "@nuxtjs/html-validator",
     "@pinia/nuxt",
+    "nuxt-security",
   ],
   compatibilityDate: "2024-10-06",
   vuefire: {

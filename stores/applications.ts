@@ -11,7 +11,7 @@ const useApplicationStore = defineStore("applications", () => {
     const actionState = ref();
 
     // getters
-    const applications = ref<IDbResult<DbApplication>>();
+    const applications = useState<IDbResult<DbApplication>>("applications", () => Object.assign([], { update: async () => { } }));
 
     // actions
     function deleteApplication(application: IDbValue<DbApplication>) {
@@ -35,7 +35,7 @@ const useApplicationStore = defineStore("applications", () => {
     }
 
     async function updateApplications() {
-        applications.value = await idb.value?.getValues(idbStores.APPLICATIONS);
+        applications.value = await idb.value?.getValues(idbStores.APPLICATIONS) ?? Object.assign([], { update: async () => { } });
     }
 
 

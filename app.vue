@@ -7,8 +7,7 @@
     </component>
 
 
-    <UButton
-icon="material-symbols:settings" size="sm" variant="ghost" title="settings"
+    <UButton icon="material-symbols:settings" size="sm" variant="ghost" title="settings"
       @click="() => openSettings = true" />
 
     <UCard class="mt-10">
@@ -26,38 +25,39 @@ icon="material-symbols:settings" size="sm" variant="ghost" title="settings"
           <p class="italic text-sm">No job applications!</p>
         </template>
       </UTable>
-      <UPagination
-v-model="page" :total="applicationsStore.applications?.length ?? NaN" :max="9" show-last
+      <UPagination v-model="page" :total="applicationsStore.applications?.length ?? NaN" :max="9" show-last
         :page-count="pageCount" show-first />
     </UCard>
   </UContainer>
 
   <component :is="settings.dialogStyle" :model-value="Boolean(dialog)" @update:model-value="e => dialog = e">
-    <ApplicationDialog
-v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
-      @delete="deleteApplication" @close="() => dialog = false" />
-    <UCard v-else class="flex flex-col flex-1">
+    <UCard v-if="dialogBody" class="flex flex-col flex-1">
       <template #header>
         <h2>{{ dialogBody.header }}</h2>
       </template>
 
       <template #default>
-        <ApplicationForm v-bind="dialogBody.props" @submit="dialogBody.props['v-on:submit']" @error="dialogBody.props['v-on:error']" />
-
-        <!-- <ApplicationForm v-model="applicationState" @submit="onSubmit" @error="onError"  /> -->
+        <component :is="dialogBody.component" v-if="dialogBody.component" v-bind="dialogBody.props"
+          @submit="dialogBody.props['v-on:submit']" @error="dialogBody.props['v-on:error']"
+          @cancel="dialogBody.props['v-on:cancel']" />
       </template>
 
 
 
       <template #footer />
     </UCard>
+    <ApplicationDialog v-else-if="selectedRow" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
+      @delete:activity="deleteActivity" @delete:application="deleteApplication"
+      @add:update="() => dialog = Dialog.UPDATE" @close="() => dialog = false" />
+
+
   </component>
 </template>
 
 <script setup lang="ts">
   import USlideover from '#ui/components/overlays/Slideover.vue';
-  import type { DeepPartial, FormErrorEvent, FormSubmitEvent } from '#ui/types';
-  import idbValue from "~/utils/idb";
+  import { ActivityForm, ApplicationForm } from "#components";
+  import type { FormErrorEvent, FormSubmitEvent } from '#ui/types';
 
   useHead({
     titleTemplate: (title) => title
@@ -71,6 +71,8 @@ v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
   enum Dialog {
     ADD = 'add',
     EDIT = 'edit',
+    DELETE = 'delete',
+    UPDATE = 'update',
   }
 
 
@@ -110,15 +112,22 @@ v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
     job: {
       title: undefined,
       company: undefined,
-      description: null,
+      description: "",
     },
     dateApplied: new Date(),
     created: new Date(),
     status: 'applied',
     method: 'online',
     location: undefined,
-    lastUpdated: new Date()
+    lastUpdated: new Date().toISOString(),
   } as DeepPartial<DbApplication>);
+
+
+  const defaultActivity = (): DeepPartial<DbActivity> => ({
+    type: undefined,
+    date: new Date(),
+    details: undefined,
+  });
 
 
   //reactivity
@@ -129,14 +138,16 @@ v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
   const dialog = ref<Dialog | boolean>();
   const settings = reactive({ dialogStyle: markRaw(USlideover) });
   const applicationState = ref<IDbValue<DbApplication> | ReturnType<typeof defaultApplication>>(defaultApplication());
+  const activity = ref<IDbValue<DbActivity> | ReturnType<typeof defaultActivity>>(defaultActivity());
   const tableRow = ref<IDbValue<DbApplication>[]>([]);
   const page = ref(1);
   const openSettings = ref(false);
   //computed
   const dialogBody = computed(() => {
     switch (dialog.value) {
-      case Dialog.ADD: return { header: 'Add application', props: { "modelValue": defaultApplication(), "v-on:update:model-value": (e) => applicationState.value = e, "v-on:submit": addApplication, "v-on:error": onError } };
-      case Dialog.EDIT: return { header: 'Edit application', props: { "modelValue": toRaw(selectedRow.value), "v-on:submit": editApplication, "v-on:error": onError } };
+      case Dialog.ADD: return { component: ApplicationForm, header: 'Add application', props: { "modelValue": defaultApplication(), "v-on:cancel": closeApplicationDialog, "v-on:update:model-value": (e) => applicationState.value = e, "v-on:submit": addApplication, "v-on:error": onError } };
+      case Dialog.EDIT: return { component: ApplicationForm, header: 'Edit application', props: { "modelValue": toRaw(selectedRow.value), "v-on:cancel": backToApplicationDialog, "v-on:submit": editApplication, "v-on:error": onError } };
+      case Dialog.UPDATE: return { component: ActivityForm, header: 'Edit application', props: { "modelValue": defaultActivity(), "v-on:cancel": backToApplicationDialog, "v-on:submit": addActivity, "v-on:error": undefined } };
       default: return undefined;
     }
   });
@@ -153,6 +164,7 @@ v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
 
   //functions
   async function addApplication(event: FormSubmitEvent<DbApplication>) {
+    console.log(event.data);
     applicationsStore.addApplication(event.data);
     dialog.value = false;
     // setDoc(testDoc_chris_myDocRef, event.data);
@@ -181,7 +193,7 @@ v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
   }
 
   function editApplication(event: FormSubmitEvent<IDbValue<DbApplication>>) {
-    const data = db.application.passthrough().and(idbValue).parse(event.data);
+    const data = db.application.passthrough().and(idb.value).parse(event.data);
     applicationsStore.editApplication(data);
     dialog.value = false;
   }
@@ -189,6 +201,33 @@ v-if="!dialogBody" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
   function deleteApplication(application: IDbValue<DbApplication>) {
     if (confirm("Are you sure?"))
       applicationsStore.deleteApplication(application);
+    dialog.value = false;
+  }
+
+  function addActivity(event: FormSubmitEvent<DbActivity>) {
+    console.log(selectedRow.value);
+    console.log(event.data);
+    const application = db.application.passthrough().and(idb.value).parse(selectedRow.value);
+    if (!application) return;
+    application.activity.push(event.data);
+    applicationsStore.editApplication(application);
+    dialog.value = false;
+  }
+
+  function backToApplicationDialog() {
+    dialog.value = true;
+  }
+
+  function closeApplicationDialog() {
+    dialog.value = false;
+  }
+
+  function deleteActivity(activity: DbActivity) {
+    const application = db.application.passthrough().and(idb.value).parse(selectedRow.value);
+    if (!application && !confirm("Are you sure?"))
+      return;
+    application.activity = application.activity.filter((act) => act !== activity);
+    applicationsStore.editApplication(application);
     dialog.value = false;
   }
 </script>
