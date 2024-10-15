@@ -7,7 +7,8 @@
     </component>
 
 
-    <UButton icon="material-symbols:settings" size="sm" variant="ghost" title="settings"
+    <UButton
+icon="material-symbols:settings" size="sm" variant="ghost" title="settings"
       @click="() => openSettings = true" />
 
     <UCard class="mt-10">
@@ -20,12 +21,13 @@
         </div>
       </template>
 
-      <UTable v-model="tableRow" :rows="rows" :columns="tableColumns" @select="onRowSelect">
+      <UTable v-model="selectedRows" :rows="rows" :columns="tableColumns" @select="onRowSelect">
         <template #empty-state>
           <p class="italic text-sm">No job applications!</p>
         </template>
       </UTable>
-      <UPagination v-model="page" :total="applicationsStore.applications?.length ?? NaN" :max="9" show-last
+      <UPagination
+v-model="page" :total="applicationsStore.applications?.length ?? NaN" :max="9" show-last
         :page-count="pageCount" show-first />
     </UCard>
   </UContainer>
@@ -37,7 +39,8 @@
       </template>
 
       <template #default>
-        <component :is="dialogBody.component" v-if="dialogBody.component" v-bind="dialogBody.props"
+        <component
+:is="dialogBody.component" v-if="dialogBody.component" v-bind="dialogBody.props"
           @submit="dialogBody.props['v-on:submit']" @error="dialogBody.props['v-on:error']"
           @cancel="dialogBody.props['v-on:cancel']" />
       </template>
@@ -46,7 +49,8 @@
 
       <template #footer />
     </UCard>
-    <ApplicationDialog v-else-if="selectedRow" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
+    <ApplicationDialog
+v-else-if="selectedRow" :application="selectedRow" @edit="() => dialog = Dialog.EDIT"
       @delete:activity="deleteActivity" @delete:application="deleteApplication"
       @add:update="() => dialog = Dialog.UPDATE" @close="() => dialog = false" />
 
@@ -138,8 +142,7 @@
   const dialog = ref<Dialog | boolean>();
   const settings = reactive({ dialogStyle: markRaw(USlideover) });
   const applicationState = ref<IDbValue<DbApplication> | ReturnType<typeof defaultApplication>>(defaultApplication());
-  const activity = ref<IDbValue<DbActivity> | ReturnType<typeof defaultActivity>>(defaultActivity());
-  const tableRow = ref<IDbValue<DbApplication>[]>([]);
+  const selectedRows = ref<IDbValue<DbApplication>[]>([]);
   const page = ref(1);
   const openSettings = ref(false);
   //computed
@@ -151,7 +154,7 @@
       default: return undefined;
     }
   });
-  const selectedRow = computed(() => tableRow.value?.[0]);
+  const selectedRow = computed(() => selectedRows.value?.[0]);
 
 
 
@@ -164,7 +167,6 @@
 
   //functions
   async function addApplication(event: FormSubmitEvent<DbApplication>) {
-    console.log(event.data);
     applicationsStore.addApplication(event.data);
     dialog.value = false;
     // setDoc(testDoc_chris_myDocRef, event.data);
@@ -184,8 +186,8 @@
   }
 
   function onRowSelect(row: IDbValue<DbApplication>) {
-    if (row._id !== tableRow.value?.[0]?._id)
-      tableRow.value = [row];
+    if (row._id !== selectedRows.value?.[0]?._id)
+      selectedRows.value = [row];
     // temp.value = 1;
     // applicationState.value = ref(temp.value);
     applicationState.value = toRaw(row);
@@ -205,13 +207,11 @@
   }
 
   function addActivity(event: FormSubmitEvent<DbActivity>) {
-    console.log(selectedRow.value);
-    console.log(event.data);
     const application = db.application.passthrough().and(idb.value).parse(selectedRow.value);
     if (!application) return;
     application.activity.push(event.data);
     applicationsStore.editApplication(application);
-    dialog.value = false;
+    dialog.value = true;
   }
 
   function backToApplicationDialog() {
@@ -224,9 +224,10 @@
 
   function deleteActivity(activity: DbActivity) {
     const application = db.application.passthrough().and(idb.value).parse(selectedRow.value);
-    if (!application && !confirm("Are you sure?"))
+    if (!application || !confirm("Are you sure?"))
       return;
-    application.activity = application.activity.filter((act) => act !== activity);
+
+    application.activity = application.activity.filter((act) => act == activity);  //soft comparison as activity could be reactive wrapped
     applicationsStore.editApplication(application);
     dialog.value = false;
   }

@@ -9,7 +9,8 @@
     <ul>
         <li v-for="(activity,i) in application.activity" :key="i" :title="activity.details">
             <UButtonGroup>
-            <UButton color="cinereous">          <time :datetime="activity.date?.toISOString() ?? activity.date">{{ new Date(activity.date).toLocaleDateString() }}</time> - {{ activity.type }}
+            <UButton color="cinereous">
+                <time :datetime="typeof activity.date === 'string' ? activity.date : activity.date.toISOString()">{{ new Date(activity.date).toLocaleDateString() }}</time> - {{ activity.type }}
                 </UButton>
                 <UButton label="Delete" color="red" @click="() => $emit('delete:activity',activity)" />
             </UButtonGroup>

@@ -6,10 +6,6 @@
             <USelect v-model="model.type" :options="db.activity.shape.type.options" required />
         </UFormGroup>
 
-        <UFormGroup label="Activity" required name="activity">
-            <UInput v-model="model.activity" required />
-        </UFormGroup>
-
         <UFormGroup label="Date" required>
             <!-- todo: add validate to be after application date -->
             <UInput :model-value="typeof model.date === 'string' ? model.date : model.date.toISOString().split('T')[0]" type="date" required @update:model-value="e => model.date = e" />
