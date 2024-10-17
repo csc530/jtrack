@@ -1,5 +1,5 @@
 <template>
-    <UForm ref="form" :schema="db.application" :state="model" @error="e => $emit('error', e)" @submit="submit">
+    <UForm ref="form" :schema="db.application" :state="model" @input="update" @error="e => $emit('error', e)" @submit="submit">
         <UFormGroup label="Job title" required name="job.title">
             <UInput v-model="model.job.title" required />
         </UFormGroup>
@@ -8,9 +8,9 @@
             <UInput v-model="model.job.company" required />
         </UFormGroup>
 
-        <UFormGroup label="date applied" required>
+        <UFormGroup label="Date applied" required>
             <UInput
-type="date" :model-value="typeof model.dateApplied === 'string' ? model.dateApplied : model.dateApplied.toISOString().split('T')[0]" required
+type="date" :model-value="model.dateApplied instanceof Date ? model.dateApplied.toISOString().split('T')[0]:model.dateApplied?.toString()" required
                 @update:model-value="e => model.dateApplied = `${e}T00:00:00.000Z`" />
         </UFormGroup>
 
@@ -18,7 +18,7 @@ type="date" :model-value="typeof model.dateApplied === 'string' ? model.dateAppl
             <USelect v-model="model.method" :options="db.applicationMethod.options" required/>
         </UFormGroup>
 
-        <UFormGroup label="Location" :description="db.application.shape.location.description" name="location" help="location does not have to be from dropdown. Click off text-box to keep your response." required>
+        <UFormGroup label="Location" :description="db.application.shape.location.description" name="location" required>
             <UInput v-model.trim="model.location" type="text" list="locations-list"  required placeholder="Glassdoor, In-store, conversation, etc."/>
             <datalist id="locations-list">
                 <option v-for="location in possibleLocations" :key="location">{{ location }}</option>
@@ -28,6 +28,8 @@ type="date" :model-value="typeof model.dateApplied === 'string' ? model.dateAppl
         <UFormGroup label="Job description" name="job.description">
             <UTextarea v-model.trim="model.job.description" placeholder="best to straight copy + paste from the job posting..."  />
         </UFormGroup>
+
+        <UInput type="hidden" :model-value="model.lastUpdated?.toString()" @update:model-value="e => model.lastUpdated = new Date(e).toISOString()" />
         <UButton label="Cancel" type="reset" @click="() => $emit('cancel')" />
         <UButton label="Submit" type="submit" />
     </UForm>
@@ -55,5 +57,9 @@ type="date" :model-value="typeof model.dateApplied === 'string' ? model.dateAppl
 
     function submit(event: FormSubmitEvent<T>) {
         emits('submit', event);
+    }
+
+    function update(){
+        model.value.lastUpdated = new Date().toISOString();
     }
 </script>

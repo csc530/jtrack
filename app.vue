@@ -167,6 +167,7 @@ v-else-if="selectedRow" :application="selectedRow" @edit="() => dialog = Dialog.
 
   //functions
   async function addApplication(event: FormSubmitEvent<DbApplication>) {
+    event.data.lastUpdated = event.data.created;
     applicationsStore.addApplication(event.data);
     dialog.value = false;
     // setDoc(testDoc_chris_myDocRef, event.data);

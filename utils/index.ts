@@ -25,3 +25,13 @@ export function toRaw<T>(val: T): T {
 export type DeepPartial<T> = T extends object ? {
     [P in keyof T]?: DeepPartial<T[P]>;
 } : T;
+
+export const applicationCsv = {
+    import(csv: string) {
+
+    },
+    export(applications: Array<IDbValue<DbApplication>|DbApplication>): string {
+        const csv = {}
+        return Object.entries(applications).map(([key, val]) => [/**/].join(",")).join("\n");
+    }
+}
