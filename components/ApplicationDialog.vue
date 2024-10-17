@@ -3,10 +3,14 @@
 
     <p>Application method: {{ application.method }} on/at {{ application.location }}</p>
 
-    <p>{{ application.job.description }}</p>
+    <section>
+        <h2>Description:</h2>
+    <p :class="$style.scrollbox">{{ application.job.description }}</p>
+    </section>
 
-    <p>Activity log:</p>
-    <ul>
+    <section>
+    <h2>Activity log:</h2>
+    <ul :class="$style.scrollbox">
         <li v-for="(activity,i) in application.activity" :key="i" :title="activity.details">
             <UButtonGroup>
             <UButton color="cinereous">
@@ -16,6 +20,7 @@
             </UButtonGroup>
         </li>
     </ul>
+    </section>
 
     <UDivider size="2xs" type="dashed" class="my-2" />
 
@@ -41,3 +46,15 @@
         close: [];
     }>();
 </script>
+
+<style lang="css" module>
+.scrollbox {
+    font: serif;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 0 1rem;
+    margin: 1rem 0;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
+}
+</style>
